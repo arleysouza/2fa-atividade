@@ -1,0 +1,98 @@
+services:
+  postgres-app:
+    image: postgres:17-alpine
+    container_name: postgres-app
+    restart: on-failure:5 # política de reinício com limite de 5 tentativas
+    env_file:
+      - ./.env  # injeta variáveis sem expô-las no compose (não copia .env para a imagem)
+    ports:
+      - "127.0.0.1:${POSTGRES_HOST_PORT}:5432"  # bind apenas no loopback (host local) → não expõe para a rede externa
+    volumes:
+      - postgres_app_data:/var/lib/postgresql/data
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]   # checagem nativa do Postgres
+      interval: 20s
+      timeout: 10s
+      retries: 5
+
+  redis-app:
+    image: redis:8-alpine
+    container_name: redis-app
+    restart: on-failure:5
+    command: ["sh", "-c", "exec redis-server --requirepass \"$$REDIS_PASSWORD\""]
+    env_file:
+      - ./.env
+    ports:
+      - "127.0.0.1:6379:6379"   # expõe só no loopback
+    volumes:
+      - redis_app_data:/data
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" ping || exit 1"]
+      interval: 20s
+      timeout: 10s
+      retries: 5
+
+  server-app:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: server-app
+    restart: on-failure:5
+    # Not publishing server-app port to the host on purpose.
+    # The backend will be reachable only inside the Docker network (via front-app proxy).
+    env_file:
+      - ./.env
+    depends_on:
+      postgres-app:
+        condition: service_healthy
+      redis-app:
+        condition: service_healthy
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/health"]
+      interval: 20s
+      timeout: 10s
+      retries: 5
+
+  front-app:
+    build:
+      context: ./front
+      dockerfile: Dockerfile
+    container_name: front-app
+    restart: on-failure:5
+    env_file:
+      - ./.env
+    ports:
+      - "${FRONT_HOST_PORT}:80"  # HTTP (externo) → 80 (nginx interno)
+      - "${FRONT_HOST_PORT_SSL}:443" # HTTPS (externo) → 443 (nginx interno)
+    volumes:
+      - ./front/certs:/etc/nginx/certs:ro
+    read_only: true
+    tmpfs:
+      - /var/cache/nginx
+      - /var/run
+      - /var/log/nginx
+    networks:
+      - app-network
+    depends_on:
+      server-app:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "--no-check-certificate", "https://127.0.0.1:443/"]
+      interval: 20s
+      timeout: 10s
+      retries: 5
+
+volumes:
+  postgres_app_data:
+  redis_app_data:
+
+networks:
+  app-network:
+    driver: bridge

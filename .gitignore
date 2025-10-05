@@ -1,0 +1,8 @@
+node_modules/
+coverage/
+dist/
+
+# Ignorar também em subpastas
+**/node_modules/
+**/certs/
+**/dist/
