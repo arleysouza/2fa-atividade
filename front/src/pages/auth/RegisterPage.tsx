@@ -45,15 +45,9 @@ const RegisterPage = () => {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
-        <button type="submit">
-          Criar conta
-        </button>
+        <button type="submit">Criar conta</button>
       </form>
-      {error && (
-        <p style={{ color: "red" }}>
-          {error}
-        </p>
-      )}
+      {error && <p style={{ color: "red" }}>{error}</p>}
       <p>
         Já tem conta? <Link to="/login">Login</Link>
       </p>

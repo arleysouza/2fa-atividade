@@ -1,29 +1,29 @@
--- Remove tabelas e tipos anteriores (garantia de reexecução do script)
+﻿-- Remove tabelas e tipos anteriores (garantia de reexecuÃ§Ã£o do script)
 DROP TABLE IF EXISTS users CASCADE;
 
 CREATE TABLE users (
     id SERIAL NOT NULL PRIMARY KEY,
-    username VARCHAR(50) NOT NULL,
-    password VARCHAR(100) NOT NULL,
-    phone VARCHAR(20) NOT NULL,
+    username VARCHAR(200) NOT NULL,
+    password VARCHAR(200) NOT NULL,
+    phone VARCHAR(100) NOT NULL,
     CONSTRAINT users_username_unique UNIQUE (username)
 );
 
--- Função para tratar a duplicidade
--- O USING ERRCODE = 'unique_violation' mantém o código de erro do PostgreSQL para integridade de chave única (23505), o que ajuda se o backend quiser tratar por código.
+-- FunÃ§Ã£o para tratar a duplicidade
+-- O USING ERRCODE = 'unique_violation' mantÃ©m o cÃ³digo de erro do PostgreSQL para integridade de chave Ãºnica (23505), o que ajuda se o backend quiser tratar por cÃ³digo.
 CREATE OR REPLACE FUNCTION check_unique_username()
 RETURNS TRIGGER AS $$
 BEGIN
-	-- Verifica se já existe username igual
-    IF EXISTS (SELECT 1 FROM users WHERE username = NEW.username) THEN
-        RAISE EXCEPTION 'O nome de usuário "%" já está cadastrado. Escolha outro.', NEW.username
-            USING ERRCODE = 'unique_violation'; -- código de violação de chave única
+	-- Verifica se jÃ¡ existe username igual
+    IF EXISTS (SELECT 1 FROM users WHERE username = NEW.username AND id <> COALESCE(NEW.id, -1)) THEN
+        RAISE EXCEPTION 'O nome de usuÃ¡rio "%" jÃ¡ estÃ¡ cadastrado. Escolha outro.', NEW.username
+            USING ERRCODE = 'unique_violation'; -- cÃ³digo de violaÃ§Ã£o de chave Ãºnica
     END IF;
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
--- Trigger para validar username único antes de inserir ou atualizar
+-- Trigger para validar username Ãºnico antes de inserir ou atualizar
 CREATE TRIGGER trg_check_unique_username
 BEFORE INSERT OR UPDATE ON users
 FOR EACH ROW

@@ -1,4 +1,5 @@
-import crypto from "crypto";
+﻿import crypto from "crypto";
+import { logger } from "./logger";
 
 const KEY_HEX = process.env.DATA_ENCRYPTION_KEY;
 
@@ -11,10 +12,10 @@ let key: Buffer;
 try {
   key = Buffer.from(KEY_HEX, "hex");
   if (key.length !== 32) {
-    throw new Error("invalid length");
+    throw new Error("Comprimento invalido");
   }
-} catch (error:any) {
-  console.error(error.message);
+} catch (error: any) {
+  logger.error({ err: error }, "Falha ao carregar chave de criptografia");
   throw new Error(
     "DATA_ENCRYPTION_KEY deve ser uma string hexadecimal de 32 bytes (64 caracteres).",
   );

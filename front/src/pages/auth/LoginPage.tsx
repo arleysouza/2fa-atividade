@@ -115,11 +115,7 @@ const LoginPage = () => {
           </button>
         </>
       )}
-      {error && (
-        <p style={{ color: "red" }}>
-          {error}
-        </p>
-      )}
+      {error && <p style={{ color: "red" }}>{error}</p>}
       {!awaitingMfa && (
         <p>
           Nao tem conta? <Link to="/register">Registrar</Link>

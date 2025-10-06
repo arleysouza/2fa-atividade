@@ -1,8 +1,41 @@
-node_modules/
-coverage/
-dist/
+﻿# Logs & runtime data
+*.log
+logs/*
+!logs/.gitignore
+**/*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
 
-# Ignorar também em subpastas
+# Dependency folders
+node_modules/
 **/node_modules/
-**/certs/
+
+# Build artifacts
+dist/
 **/dist/
+coverage/
+**/coverage/
+*.tsbuildinfo
+**/*.tsbuildinfo
+
+# Certificates and private keys
+certs/
+**/certs/
+*.pem
+*.key
+
+# IDE/editor settings
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Misc cache/temp
+.tmp/
+**/.tmp/
+*.tmp
+.sass-cache/
+.parcel-cache/
+

@@ -1,8 +1,18 @@
-import axios from "axios";
-import type { Register, Login, Logout, ChangePassword, VerifyMfa } from "../types/auth";
+﻿import { isAxiosError } from "axios";
+import apiClient from "./client";
+import type {
+  Register,
+  Login,
+  Logout,
+  ChangePassword,
+  VerifyMfa,
+} from "../types/auth";
 
-// URL base do backend (nginx faz proxy para /api → server-app:3000)
-const VITE_SERVER = "/api";
+type ApiErrorResponse = {
+  error?: string;
+  message?: string;
+  data?: string[];
+};
 
 // Wrapper para padronizar sucesso/erro
 const requestWrapper = async <T>(
@@ -12,19 +22,15 @@ const requestWrapper = async <T>(
     const response = await fn();
     return response.data;
   } catch (err: unknown) {
-    if (axios.isAxiosError(err)) {
-      const respData = err.response?.data as {
-        error?: string;
-        message?: string;
-        data?: string[];
-      };
+    if (isAxiosError<ApiErrorResponse>(err)) {
+      const respData = err.response?.data;
 
       return {
         success: false,
         error:
-          respData?.data?.[0] ||
-          respData?.error ||
-          respData?.message ||
+          respData?.data?.[0] ??
+          respData?.error ??
+          respData?.message ??
           "Erro de comunicação com o servidor",
       } as T;
     }
@@ -42,7 +48,7 @@ export const register = async (
   phone: string,
 ): Promise<Register> =>
   requestWrapper<Register>(() =>
-    axios.post(`${VITE_SERVER}/users`, { username, password, phone }),
+    apiClient.post("/users", { username, password, phone }),
   );
 
 export const login = async (
@@ -50,7 +56,7 @@ export const login = async (
   password: string,
 ): Promise<Login> =>
   requestWrapper<Login>(() =>
-    axios.post(`${VITE_SERVER}/users/login`, { username, password }),
+    apiClient.post("/users/login", { username, password }),
   );
 
 export const verifyMfa = async (
@@ -58,13 +64,13 @@ export const verifyMfa = async (
   code: string,
 ): Promise<VerifyMfa> =>
   requestWrapper<VerifyMfa>(() =>
-    axios.post(`${VITE_SERVER}/users/login/verify-mfa`, { username, code }),
+    apiClient.post("/users/login/verify-mfa", { username, code }),
   );
 
 export const logout = async (token: string): Promise<Logout> =>
   requestWrapper<Logout>(() =>
-    axios.post(
-      `${VITE_SERVER}/users/logout`,
+    apiClient.post(
+      "/users/logout",
       {},
       { headers: { Authorization: `Bearer ${token}` } },
     ),
@@ -76,12 +82,9 @@ export const changePassword = async (
   newPassword: string,
 ): Promise<ChangePassword> =>
   requestWrapper<ChangePassword>(() =>
-    axios.patch(
-      `${VITE_SERVER}/users/password`,
+    apiClient.patch(
+      "/users/password",
       { oldPassword, newPassword },
       { headers: { Authorization: `Bearer ${token}` } },
     ),
   );
-
-
-

@@ -43,19 +43,11 @@ const ChangePasswordPage = () => {
           value={newPassword}
           onChange={(e) => setNewPassword(e.target.value)}
         />
-        <button type="submit">
-          Alterar
-        </button>
+        <button type="submit">Alterar</button>
       </form>
-      {error && (
-        <p style={{ color: "red" }}>
-          {error}
-        </p>
-      )}
+      {error && <p style={{ color: "red" }}>{error}</p>}
       {!error && success && (
-        <p style={{ color: "green" }}>
-          Senha alterada com sucesso!
-        </p>
+        <p style={{ color: "green" }}>Senha alterada com sucesso!</p>
       )}
     </Container>
   );

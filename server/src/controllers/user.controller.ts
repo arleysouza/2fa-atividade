@@ -9,6 +9,8 @@ import { clearRateLimit } from "../middlewares/rateLimit";
 import { generateToken } from "../utils/jwt";
 import { encrypt, decrypt } from "../utils/encryption";
 
+import { logger } from "../utils/logger";
+
 // --- Criar usuario ---
 export const createUser = async (req: Request, res: Response): Promise<void> => {
   try {
@@ -42,9 +44,11 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
 
 // --- Login de usuario ---
 export const loginUser = async (req: Request, res: Response): Promise<void> => {
+  const { username, password } = (req.body ?? {}) as { username?: string; password?: string };
+  const providedUsername = String(username ?? "");
+  const providedPassword = typeof password === "string" ? password : "";
   try {
-    const { username, password } = req.body;
-    const normalizedUsername = String(username ?? "").toLowerCase();
+    const normalizedUsername = providedUsername.toLowerCase();
     const loginAttemptsKey = `auth:login:${normalizedUsername}:attempts`;
 
     const attemptCountRaw = await redisClient.get(loginAttemptsKey);
@@ -60,7 +64,7 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
 
     const result = await db.query(
       "SELECT id,username,password,phone FROM users WHERE username = $1",
-      [username],
+      [providedUsername],
     );
 
     if (result.rows.length === 0) {
@@ -90,12 +94,15 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
     try {
       decryptedPhone = decrypt(String(user.phone));
     } catch (decryptError) {
-      console.error("Erro ao descriptografar telefone do usuario:", decryptError);
+      logger.error(
+        { err: decryptError, username: providedUsername || undefined },
+        "Erro ao descriptografar telefone do usuario",
+      );
       res.status(500).json({ success: false, error: "Erro interno ao acessar dados do usuario." });
       return;
     }
     user.phone = decryptedPhone;
-    const validPassword = await bcrypt.compare(password, user.password);
+    const validPassword = await bcrypt.compare(providedPassword, user.password);
 
     if (!validPassword) {
       const newAttempts = await redisClient.incr(loginAttemptsKey);
@@ -134,7 +141,7 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
       );
     } catch (smsError: any) {
       await redisClient.del(cacheKey).catch(() => undefined);
-      console.error("Erro ao enviar SMS de MFA:", smsError?.message || smsError);
+      logger.error({ err: smsError, userId: user.id }, "Erro ao enviar SMS de MFA");
       res.status(500).json({
         success: false,
         error: "Nao foi possivel enviar o codigo de verificacao. Tente novamente.",
@@ -152,15 +159,16 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
       },
     });
   } catch (error: any) {
-    console.error(error.message);
+    logger.error({ err: error, username: providedUsername || undefined }, "Erro ao realizar login");
     res.status(500).json({ success: false, error: "Erro ao realizar login." });
   }
 };
 
 // --- Verificar MFA ---
 export const verifyMfaCode = async (req: Request, res: Response): Promise<void> => {
+  const { username, code } = (req.body ?? {}) as { username?: string; code?: string };
+  const providedUsername = String(username ?? "");
   try {
-    const { username, code } = req.body;
     const normalizedCode = String(code ?? "").trim();
 
     if (!/^\d{3}$/.test(normalizedCode)) {
@@ -168,10 +176,9 @@ export const verifyMfaCode = async (req: Request, res: Response): Promise<void> 
       return;
     }
 
-    const result = await db.query(
-      "SELECT id,username,phone FROM users WHERE username = $1",
-      [username],
-    );
+    const result = await db.query("SELECT id,username,phone FROM users WHERE username = $1", [
+      providedUsername,
+    ]);
 
     if (result.rows.length === 0) {
       res.status(401).json({ success: false, error: "Credenciais inválidas." });
@@ -183,7 +190,10 @@ export const verifyMfaCode = async (req: Request, res: Response): Promise<void> 
     try {
       decryptedPhone = decrypt(String(user.phone));
     } catch (decryptError) {
-      console.error("Erro ao descriptografar telefone do usuario:", decryptError);
+      logger.error(
+        { err: decryptError, username: providedUsername || undefined },
+        "Erro ao descriptografar telefone do usuario",
+      );
       res.status(500).json({ success: false, error: "Erro interno ao acessar dados do usuario." });
       return;
     }
@@ -259,7 +269,10 @@ export const verifyMfaCode = async (req: Request, res: Response): Promise<void> 
       },
     });
   } catch (error: any) {
-    console.error(error.message);
+    logger.error(
+      { err: error, username: providedUsername || undefined },
+      "Erro ao verificar codigo de duas etapas",
+    );
     res.status(500).json({ success: false, error: "Erro ao verificar código de duas etapas." });
   }
 };
@@ -267,12 +280,12 @@ export const verifyMfaCode = async (req: Request, res: Response): Promise<void> 
 // --- Logout de usuario ---
 // O token será adicionado ao Redis blacklist até expirar
 export const logoutUser = async (req: Request, res: Response): Promise<void> => {
+  const currentUser = req.user as (UserPayload & { exp?: number }) | undefined;
   try {
     // `authMiddleware` ja validou o token, basta recupera-lo
     const token = req.headers.authorization!.split(" ")[1];
 
-    const decoded: any = req.user; // vem preenchido pelo middleware
-    const exp = decoded?.exp;
+    const exp = currentUser?.exp;
     if (!exp) {
       res.status(400).json({ success: false, error: "Token invalido" });
       return;
@@ -296,19 +309,24 @@ export const logoutUser = async (req: Request, res: Response): Promise<void> => 
       data: { message: "Logout realizado com sucesso. Token invalidado." },
     });
   } catch (error: any) {
-    console.error(error.message);
+    logger.error({ err: error, userId: currentUser?.id }, "Erro ao realizar logout");
     res.status(500).json({ success: false, error: "Erro ao realizar logout." });
   }
 };
 
 // --- Alterar senha do usuario ---
 export const changePassword = async (req: Request, res: Response): Promise<void> => {
+  const currentUser = req.user as UserPayload | undefined;
   try {
     // `authMiddleware` ja populou req.user
-    const { id } = req.user as UserPayload;
+    const userId = currentUser?.id;
+    if (!userId) {
+      res.status(401).json({ success: false, error: "Usuario nao autenticado" });
+      return;
+    }
     const { oldPassword, newPassword } = req.body;
 
-    const result = await db.query("SELECT password FROM users WHERE id = $1", [id]);
+    const result = await db.query("SELECT password FROM users WHERE id = $1", [userId]);
     if (result.rows.length === 0) {
       res.status(404).json({ success: false, error: "Usuário não encontrado" });
       return;
@@ -321,26 +339,15 @@ export const changePassword = async (req: Request, res: Response): Promise<void>
       return;
     }
 
-
     const hashedPassword = await bcrypt.hash(newPassword, 10);
-    await db.query("UPDATE users SET password = $1 WHERE id = $2", [hashedPassword, id]);
+    await db.query("UPDATE users SET password = $1 WHERE id = $2", [hashedPassword, userId]);
 
     res.status(200).json({
       success: true,
       data: { message: "Senha alterada com sucesso" },
     });
   } catch (error: any) {
-    console.error(error.message);
+    logger.error({ err: error, userId: currentUser?.id }, "Erro ao alterar senha");
     res.status(500).json({ success: false, error: "Erro ao alterar senha." });
   }
 };
-
-
-
-
-
-
-
-
-
-

@@ -1,5 +1,6 @@
-import { Request, Response, NextFunction } from "express";
+﻿import { Request, Response, NextFunction } from "express";
 import redisClient from "../configs/redis";
+import { logger } from "../utils/logger";
 
 const getClientIp = (req: Request): string => {
   const forwarded = req.headers["x-forwarded-for"];
@@ -19,11 +20,7 @@ interface RateLimitOptions {
   windowSeconds: number;
 }
 
-export const createRateLimitMiddleware = ({
-  prefix,
-  limit,
-  windowSeconds,
-}: RateLimitOptions) => {
+export const createRateLimitMiddleware = ({ prefix, limit, windowSeconds }: RateLimitOptions) => {
   return async (req: Request, res: Response, next: NextFunction) => {
     try {
       const ip = getClientIp(req);
@@ -47,7 +44,7 @@ export const createRateLimitMiddleware = ({
       (req as any).__rateLimitKey = key;
       next();
     } catch (error) {
-      console.error("Erro no middleware de rate limit:", error);
+      logger.error({ err: error }, "Erro no middleware de rate limit");
       res.status(429).json({ success: false, error: "Muitas tentativas. Tente novamente." });
     }
   };
@@ -62,6 +59,6 @@ export const clearRateLimit = async (req: Request) => {
   try {
     await redisClient.del(key);
   } catch (error) {
-    console.error("Erro ao limpar rate limit:", error);
+    logger.warn({ err: error, key }, "Erro ao limpar rate limit");
   }
 };

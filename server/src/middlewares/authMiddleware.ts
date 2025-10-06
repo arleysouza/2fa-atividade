@@ -1,7 +1,8 @@
-import { Request, Response, NextFunction } from "express";
+﻿import { Request, Response, NextFunction } from "express";
 import { verifyToken } from "../utils/jwt"; // agora usa jsonwebtoken
 import redisClient from "../configs/redis";
 import crypto from "crypto";
+import { logger } from "../utils/logger";
 
 export async function authMiddleware(req: Request, res: Response, next: NextFunction) {
   try {
@@ -9,7 +10,7 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       res.status(401).json({
         success: false,
-        error: "Token não fornecido",
+        error: "Token nao fornecido",
       });
       return;
     }
@@ -19,13 +20,13 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
     // Gera hash do token para comparar com a blacklist
     const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
 
-    // Verifica se token está na blacklist do Redis
+    // Verifica se token esta na blacklist do Redis
     const isBlacklisted = await redisClient.get(`blacklist:jwt:${tokenHash}`);
 
     if (isBlacklisted) {
       res.status(401).json({
         success: false,
-        error: "Token expirado ou inválido",
+        error: "Token expirado ou invalido",
       });
       return;
     }
@@ -36,10 +37,10 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
     req.user = payload; // tipado via types/express/index.d.ts
     next();
   } catch (error) {
-    console.error("Erro no middleware de autenticação:", error);
+    logger.error({ err: error }, "Erro no middleware de autenticacao");
     res.status(401).json({
       success: false,
-      error: "Token inválido ou expirado",
+      error: "Token invalido ou expirado",
     });
   }
 }

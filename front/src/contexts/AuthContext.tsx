@@ -10,7 +10,11 @@ interface AuthContextProps {
   error: string | null;
   login: (username: string, password: string) => Promise<Login>;
   verifyMfa: (username: string, code: string) => Promise<VerifyMfa>;
-  register: (username: string, password: string, phone: string) => Promise<Register>;
+  register: (
+    username: string,
+    password: string,
+    phone: string,
+  ) => Promise<Register>;
   logout: () => Promise<Logout | void>;
   changePassword: (oldPassword: string, newPassword: string) => Promise<void>;
   clearError: () => void;
@@ -63,7 +67,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const response = await authApi.login(username, password);
 
     if (response.success && response.data?.token && response.data.user) {
-      persistSession({ setToken, setUser }, response.data.token, response.data.user);
+      persistSession(
+        { setToken, setUser },
+        response.data.token,
+        response.data.user,
+      );
     } else if (!response.success && response.error) {
       setError(response.error);
     }
@@ -85,7 +93,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const response = await authApi.verifyMfa(username, code);
 
     if (response.success && response.data?.token && response.data.user) {
-      persistSession({ setToken, setUser }, response.data.token, response.data.user);
+      persistSession(
+        { setToken, setUser },
+        response.data.token,
+        response.data.user,
+      );
     } else if (!response.success && response.error) {
       setError(response.error);
     }
@@ -127,7 +139,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setError(null);
     if (!token) throw new Error("Usuario nao autenticado");
     try {
-      const response = await authApi.changePassword(token, oldPassword, newPassword);
+      const response = await authApi.changePassword(
+        token,
+        oldPassword,
+        newPassword,
+      );
       if (!response.success && response.error) {
         setError(response.error);
       }
