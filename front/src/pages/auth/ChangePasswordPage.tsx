@@ -1,6 +1,9 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import useAuth from "../../contexts/useAuth";
 import styled from "styled-components";
+import PasswordInput from "../../components/PasswordInput";
+import PasswordRequirements from "../../components/PasswordRequirements";
+import { isPasswordCompliant } from "../../utils/passwordRules";
 
 const Container = styled.div`
   max-width: 400px;
@@ -16,10 +19,15 @@ const ChangePasswordPage = () => {
   const [oldPassword, setOldPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [success, setSuccess] = useState(false);
+  const newPasswordValid = isPasswordCompliant(newPassword);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      if (!newPasswordValid) {
+        setSuccess(false);
+        return;
+      }
       await changePassword(oldPassword, newPassword);
       setSuccess(true);
     } catch {
@@ -30,20 +38,19 @@ const ChangePasswordPage = () => {
   return (
     <Container>
       <h2>Alterar Senha</h2>
-      <form onSubmit={handleSubmit}>
-        <input
-          type="password"
+      <form onSubmit={handleSubmit} noValidate>
+        <PasswordInput
           placeholder="Senha atual"
           value={oldPassword}
           onChange={(e) => setOldPassword(e.target.value)}
         />
-        <input
-          type="password"
+        <PasswordInput
           placeholder="Nova senha"
           value={newPassword}
           onChange={(e) => setNewPassword(e.target.value)}
         />
-        <button type="submit">Alterar</button>
+        <PasswordRequirements password={newPassword} />
+        <button type="submit" disabled={!newPasswordValid}>Alterar</button>
       </form>
       {error && <p style={{ color: "red" }}>{error}</p>}
       {!error && success && (
@@ -54,3 +61,6 @@ const ChangePasswordPage = () => {
 };
 
 export default ChangePasswordPage;
+
+
+

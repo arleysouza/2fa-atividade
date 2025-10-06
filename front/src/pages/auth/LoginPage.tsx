@@ -1,8 +1,9 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import useAuth from "../../contexts/useAuth";
 import type { User } from "../../types/auth";
 import AuthLayout from "../../layouts/AuthLayout";
+import PasswordInput from "../../components/PasswordInput";
 
 const LoginPage = () => {
   const { login, verifyMfa, error, clearError } = useAuth();
@@ -33,7 +34,7 @@ const LoginPage = () => {
       if (result.success && result.data?.requires2FA) {
         setAwaitingMfa(true);
         setPendingUser(result.data.user ?? null);
-        setMfaMessage(result.data.message ?? "Código enviado por SMS.");
+        setMfaMessage(result.data.message ?? "CÃ³digo enviado por SMS.");
         setCode("");
         return;
       }
@@ -75,8 +76,7 @@ const LoginPage = () => {
               setUsername(e.target.value);
             }}
           />
-          <input
-            type="password"
+          <PasswordInput
             placeholder="Senha"
             value={password}
             onChange={(e) => {
@@ -91,12 +91,12 @@ const LoginPage = () => {
       ) : (
         <>
           <p>
-            {mfaMessage || "Informe o código recebido."}
-            {pendingUser?.phone ? ` Número: ${pendingUser.phone}` : ""}
+            {mfaMessage || "Informe o cÃ³digo recebido."}
+            {pendingUser?.phone ? ` NÃºmero: ${pendingUser.phone}` : ""}
           </p>
           <form onSubmit={handleVerifyMfa}>
             <input
-              placeholder="Código"
+              placeholder="CÃ³digo"
               value={code}
               inputMode="numeric"
               pattern="[0-9]{3}"
@@ -126,3 +126,4 @@ const LoginPage = () => {
 };
 
 export default LoginPage;
+

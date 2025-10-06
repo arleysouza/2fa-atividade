@@ -1,0 +1,144 @@
+﻿name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+env:
+  NODE_VERSION: "20"
+  DATA_ENCRYPTION_KEY: 1A65C1C4EF67F44DA139FC37BDC964E1A2127E93A34050BC7E4A4EC06FB2FC07
+  TRANSPORT_ENCRYPTION_KEY: 0123456789ABCDEFFEDCBA98765432100123456789ABCDEFFEDCBA9876543210
+  VITE_TRANSPORT_ENCRYPTION_KEY: 0123456789ABCDEFFEDCBA98765432100123456789ABCDEFFEDCBA9876543210
+  JWT_SECRET: super-secret-jwt
+  TWILIO_ACCOUNT_SID: AC00000000000000000000000000000000
+  TWILIO_AUTH_TOKEN: 00000000000000000000000000000000
+  TWILIO_FROM_NUMBER: "+15555555555"
+
+jobs:
+  lint-server:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+        working-directory: server
+      - name: Run ESLint (server)
+        run: npm run lint
+        working-directory: server
+
+  lint-front:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: front/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+        working-directory: front
+      - name: Run ESLint (front)
+        run: npm run lint
+        working-directory: front
+
+  build-server:
+    needs: lint-server
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+        working-directory: server
+      - name: Build server
+        run: npm run build
+        working-directory: server
+
+  test-server-unit:
+    needs: build-server
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: server/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+        working-directory: server
+      - name: Run unit tests (server)
+        run: npm run test:unit -- --coverage
+        working-directory: server
+      - name: Upload unit coverage
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-unit-coverage
+          path: server/coverage
+
+  test-server-integration:
+    needs: build-server
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run integration tests (docker compose)
+        run: docker compose -f docker-compose.integration.yml up --build --abort-on-container-exit
+      - name: Tear down integration stack
+        if: always()
+        run: docker compose -f docker-compose.integration.yml down -v
+
+  test-server-e2e:
+    needs: build-server
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run API E2E tests (docker compose)
+        run: docker compose -f docker-compose.e2e-server.yml up --build --abort-on-container-exit
+      - name: Tear down API E2E stack
+        if: always()
+        run: docker compose -f docker-compose.e2e-server.yml down -v
+
+  build-front:
+    needs: lint-front
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: front/package-lock.json
+      - name: Install dependencies
+        run: npm ci
+        working-directory: front
+      - name: Build front
+        run: npm run build
+        working-directory: front
+
+
+  summary:
+    needs:
+      - test-server-unit
+      - test-server-integration
+      - test-server-e2e
+      - build-front
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Mark workflow success
+        run: echo "CI pipeline completed"
