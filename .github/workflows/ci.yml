@@ -136,9 +136,14 @@ jobs:
 
       - name: 🚀 Run containers
         run: |
-          docker compose -f docker-compose.yml up -d
-          sleep 20
-          docker ps -a
+          set -e
+          # Start and wait for services to be healthy (respects healthchecks)
+          docker compose -f docker-compose.yml up -d --wait --wait-timeout 120 \
+            || { echo "Services failed to become healthy"; \
+                 docker compose -f docker-compose.yml ps; \
+                 docker compose -f docker-compose.yml logs --no-color; \
+                 exit 1; }
+          docker compose -f docker-compose.yml ps
 
       - name: 🛡 Run Docker Bench Security
         run: |
