@@ -1,6 +1,6 @@
 ### Login
 # @name login
-POST https://llocalhost:3443/users/login
+POST http://localhost:3000/users/login
 Content-Type: application/json
 
 {
@@ -10,18 +10,18 @@ Content-Type: application/json
 
 
 ### Register User
-POST https://localhost:3443/users
+POST http://localhost:3000/users
 Content-Type: application/json
 
 {
   "username": "jose.souza",
-  "password": "123456",
-  "phone": "12998765432" 
+  "password": "@aB12345",
+  "phone": "+5512988776655" 
 }
 
 
 ### Register User
-POST https://localhost:3443/users
+POST http://localhost:3000/users
 Content-Type: application/json
 
 {
@@ -31,11 +31,11 @@ Content-Type: application/json
 }
 
 ### Logout
-POST https://localhost:3443/users/logout
+POST http://localhost:3000/users/logout
 Authorization: Bearer {{login.response.body.data.token}}
 
 ### Change Password
-PATCH  https://localhost:3443/users/password
+PATCH  http://localhost:3000/users/password
 Authorization: Bearer {{login.response.body.data.token}}
 Content-Type: application/json
 

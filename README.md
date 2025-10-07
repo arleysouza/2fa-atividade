@@ -97,7 +97,7 @@ PowerShell (Windows):
 ```powershell
 mkdir .\front\certs
 openssl genrsa -out front\certs\privkey.pem 2048
-openssl req -x509 -nodes -days 365 -new -key front\certs\privkey.pem -out front\certs\fullchain.pem -subj "/CN=localhost"
+openssl req -x509 -nodes -days 365 -new -key front\certs\privkey.pem -out front\certs\fullchain.pem
 ```
 
 Bash (Linux/macOS/Git Bash):
@@ -105,7 +105,7 @@ Bash (Linux/macOS/Git Bash):
 ```bash
 mkdir -p front/certs
 openssl genrsa -out front/certs/privkey.pem 2048
-openssl req -x509 -nodes -days 365 -new -key front/certs/privkey.pem -out front/certs/fullchain.pem -subj "/CN=localhost"
+openssl req -x509 -nodes -days 365 -new -key front/certs/privkey.pem -out front/certs/fullchain.pem
 ```
 
 3. **Subir a aplicação**
