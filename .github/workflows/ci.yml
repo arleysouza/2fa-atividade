@@ -57,6 +57,34 @@ jobs:
       - name: Compilar código
         run: npm run build --prefix server
 
+  trivy-scan:
+    runs-on: ubuntu-latest
+    needs: build-server
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 🐳 Build Docker image
+        run: docker build -t security-misconfig-app:latest -f server/Dockerfile ./server
+
+      - name: 🔎 Run Trivy Scan (Summary)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'security-misconfig-app:latest'
+          format: 'table'
+          exit-code: '0'
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+
+      - name: 🔎 Run Trivy Scan (JSON Report)
+        run: |
+          trivy image --format json --output trivy-report.json security-misconfig-app:latest
+
+      - name: 📤 Upload Trivy Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-report
+          path: trivy-report.json
+        
   docker:
     runs-on: ubuntu-latest
     needs: build-server
