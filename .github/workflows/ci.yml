@@ -56,3 +56,35 @@ jobs:
 
       - name: Compilar código
         run: npm run build --prefix server
+
+  docker:
+    runs-on: ubuntu-latest
+    needs: build-server
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🐳 Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: 📦 Build Docker images
+        run: |
+          docker compose -f docker-compose.yml build
+
+      - name: 🚀 Run containers
+        run: |
+          docker compose -f docker-compose.yml up -d
+          sleep 20
+          docker ps -a
+
+      - name: 🛡 Run Docker Bench Security
+        run: |
+          docker run --rm --net host --pid host --userns host \
+            --cap-add audit_control \
+            -v /var/lib:/var/lib:ro \
+            -v /var/run/docker.sock:/var/run/docker.sock:ro \
+            docker/docker-bench-security || true
+
+      - name: 🛑 Stop containers
+        if: always()
+        run: docker compose -f docker-compose.yml down
