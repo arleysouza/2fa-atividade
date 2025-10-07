@@ -1,0 +1,7 @@
+services:
+  server-app:
+    environment:
+      # Avoid file writes to bind-mounted /var/log/app on CI runners
+      - DISABLE_FILE_LOGS=true
+      - LOG_PRETTY=false
+
