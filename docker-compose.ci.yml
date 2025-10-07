@@ -4,4 +4,9 @@ services:
       # Avoid file writes to bind-mounted /var/log/app on CI runners
       - DISABLE_FILE_LOGS=true
       - LOG_PRETTY=false
-
+  front-app:
+    volumes:
+      # Override nginx config to HTTP-only in CI (since certs are gitignored)
+      - ./front/nginx.ci.conf:/etc/nginx/conf.d/default.conf:ro
+    environment:
+      - NGINX_ENTRYPOINT_QUIET_LOGS=1
