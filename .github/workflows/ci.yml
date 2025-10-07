@@ -84,7 +84,42 @@ jobs:
         with:
           name: trivy-report
           path: trivy-report.json
-        
+
+  snyk-scan:
+    runs-on: ubuntu-latest
+    needs: build-server
+    steps:
+      - uses: actions/checkout@v4
+
+      # Instala dependências necessárias para o Snyk analisar
+      - name: 📦 Install dependencies
+        run: |
+          cd server
+          npm install
+
+      # Scan das dependências Node.js (resumo no log)
+      - name: 🧪 Run Snyk Scan (Node.js - Summary)
+        uses: snyk/actions/node@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          command: test
+          args: --file=server/package.json --package-manager=npm --severity-threshold=high
+
+      # Scan das dependências Node.js (JSON Report)
+      - name: 🧪 Run Snyk Scan (Node.js - JSON Report)
+        run: |
+          cd server
+          npx snyk test --json --file=package.json > ../snyk-node-report.json
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+
+      - name: 📤 Upload Snyk Node Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: snyk-node-report
+          path: snyk-node-report.json
+
   docker:
     runs-on: ubuntu-latest
     needs: build-server
