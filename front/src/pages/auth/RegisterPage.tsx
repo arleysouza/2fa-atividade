@@ -52,7 +52,9 @@ const RegisterPage = () => {
           onChange={(e) => setPassword(e.target.value)}
         />
         <PasswordRequirements password={password} />
-        <button type="submit" disabled={!passwordValid}>Criar conta</button>
+        <button type="submit" disabled={!passwordValid}>
+          Criar conta
+        </button>
       </form>
       {error && <p style={{ color: "red" }}>{error}</p>}
       <p>
@@ -63,6 +65,3 @@ const RegisterPage = () => {
 };
 
 export default RegisterPage;
-
-
-

@@ -29,9 +29,17 @@ type PasswordRequirementsProps = {
   style?: CSSProperties;
 };
 
-const PasswordRequirements = ({ password, className, style }: PasswordRequirementsProps) => {
+const PasswordRequirements = ({
+  password,
+  className,
+  style,
+}: PasswordRequirementsProps) => {
   return (
-    <ul className={className} style={{ ...listStyle, ...style }} aria-live="polite">
+    <ul
+      className={className}
+      style={{ ...listStyle, ...style }}
+      aria-live="polite"
+    >
       {passwordRequirements.map((requirement) => {
         const met = requirement.test(password);
         return (

@@ -1,4 +1,9 @@
-﻿import { forwardRef, useState, type CSSProperties, type InputHTMLAttributes } from "react";
+﻿import {
+  forwardRef,
+  useState,
+  type CSSProperties,
+  type InputHTMLAttributes,
+} from "react";
 
 export type PasswordInputProps = InputHTMLAttributes<HTMLInputElement> & {
   toggleLabel?: {
@@ -26,7 +31,10 @@ const buttonStyle: CSSProperties = {
 };
 
 const PasswordInput = forwardRef<HTMLInputElement, PasswordInputProps>(
-  ({ toggleLabel = defaultLabels, containerStyle, style, ...inputProps }, ref) => {
+  (
+    { toggleLabel = defaultLabels, containerStyle, style, ...inputProps },
+    ref,
+  ) => {
     const [visible, setVisible] = useState(false);
 
     return (

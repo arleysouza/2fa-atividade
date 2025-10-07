@@ -50,7 +50,9 @@ const ChangePasswordPage = () => {
           onChange={(e) => setNewPassword(e.target.value)}
         />
         <PasswordRequirements password={newPassword} />
-        <button type="submit" disabled={!newPasswordValid}>Alterar</button>
+        <button type="submit" disabled={!newPasswordValid}>
+          Alterar
+        </button>
       </form>
       {error && <p style={{ color: "red" }}>{error}</p>}
       {!error && success && (
@@ -61,6 +63,3 @@ const ChangePasswordPage = () => {
 };
 
 export default ChangePasswordPage;
-
-
-

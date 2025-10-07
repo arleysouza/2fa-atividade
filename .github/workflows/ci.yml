@@ -46,6 +46,7 @@ jobs:
   build-server:
     name: Build TypeScript (Server)
     runs-on: ubuntu-latest
+    needs: lint-server
     steps:
       - name: Checkout do código
         uses: actions/checkout@v4
