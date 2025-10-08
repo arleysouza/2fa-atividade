@@ -279,6 +279,30 @@ Segurança
 
 ---
 
+## Fluxograma – Registro de Usuário (Mermaid)
+
+```mermaid
+flowchart TD
+  A[Usuário] --> B[front/src/pages/auth/RegisterPage.tsx\nPasswordInput + PasswordRequirements]
+  B --> C[front/src/contexts/AuthContext.tsx]
+  C --> D[front/src/api/auth.ts::register]
+  D --> E[front/src/api/client.ts\nAxios interceptors\nAES-GCM + headers]
+  E --> F[Nginx (front/nginx.conf)\nlocation /api → server-app:3000]
+  F --> G[server/src/index.ts\nmiddlewares de criptografia + logger]
+  G --> H[server/src/routes/index.ts → /users]
+  H --> I[server/src/routes/users.routes.ts\nvalidateBody (username, password, phone E.164)]
+  I --> J[server/src/controllers/user.controller.ts::createUser\nbcrypt.hash + encrypt(phone)]
+  J --> K[(PostgreSQL\ndb/init.sql + trigger unicidade)]
+  K --> L{Cliente aceita resposta cifrada?}
+  L -- sim --> M[server encryptResponseMiddleware]
+  L -- não --> N[server responde JSON]
+  M --> O[Nginx → Axios decifra]
+  N --> O
+  O --> P[Front navega para /login ao sucesso]
+```
+
+---
+
 ## Fluxograma – Registro de Usuário
 
 ```text
