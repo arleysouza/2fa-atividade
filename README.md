@@ -9,7 +9,7 @@ Este monorepo demonstra como estruturar, testar e operar uma aplicação full-st
 - **Proxy / TLS**: Nginx
 - **Infra**: Docker / Docker Compose + GitHub Actions (CI/CD)
 
-Além dos fluxos E2E usuais (cadastro, login, MFA, troca de senha, logout), o projeto cobre cenários de segurança como criptografia em repouso e em trânsito, prevenção de MITM em TLS autoassinado, rate limiting e audit logging estruturado.
+Além dos fluxos E2E usuais (cadastro, login, MFA, troca de senha, logout), o projeto cobre cenários de segurança como criptografia em repouso e em trânsito, prevenção de MITM (Man-In-The-Middle) em TLS autoassinado, rate limiting e audit logging estruturado.
 
 
 ---
@@ -23,58 +23,81 @@ Além dos fluxos E2E usuais (cadastro, login, MFA, troca de senha, logout), o pr
 - **AES‑256‑GCM em repouso**: Criptografia de telefone armazenado no banco.
 - **AES‑256‑GCM em transporte**: Payloads sensíveis trafegam cifrados, mesmo sobre TLS autoassinado (camada simétrica compartilhada).
 - **Pino + multistream**: Logger estruturado com redaction (evita tokens em log), saída em console + arquivo (`./logs/server/server.log` via volume).
-- **Playwright**: Testes E2E com Page Object Pattern.
 - **Nginx**: Reverse proxy `/api → server-app:3000`, TLS com certificados autoassinados e cabeçalhos de segurança.
 - **Docker / Docker Compose**: Ambientes isolados para produção e suites de testes.
-- **GitHub Actions**: Pipeline com lint e build (front e back).
+- **GitHub Actions (CI)**: Lint/Prettier (front/server), build TypeScript (server), build de imagem Docker + Trivy (tabela e relatório JSON como artefato), Snyk (dependências Node com limiar de severidade "high" e artefato JSON) e Docker Bench Security via Docker Compose; usa concurrency com cancel-in-progress e publica artefatos.
 
 ---
 
 ## 🗂 Estrutura de Pastas
 
 ```text
-app/
-├── .github/workflows/ci.yml
-├── db/
-│   └── init.sql
-├── front/
-│   ├── src/
-│   │   ├── api/                 # axios + interceptors com camada AES
-│   │   ├── components/
-│   │   │   ├── PasswordInput.tsx            # campo com Mostrar/Ocultar
-│   │   │   └── PasswordRequirements.tsx     # checklist dinâmico de regras
-│   │   ├── utils/passwordRules.ts           # regras reutilizadas (front/back)
-│   │   └── pages/auth/
-│   │       ├── LoginPage.tsx                # suporte a 2FA (SMS)
-│   │       ├── RegisterPage.tsx             # validação de senha forte
-│   │       └── ChangePasswordPage.tsx
-│   ├── tests/e2e/             # specs Playwright + Page Objects
-│   ├── Dockerfile             # build front → Nginx (produção)
-│   ├── Dockerfile.e2e.front   # build + stage Playwright
-│   ├── nginx.conf             # proxy + TLS autoassinado
-│   ├── nginx.main.conf
-│   └── public/favicon.ico
-├── server/
-│   ├── src/
-│   │   ├── configs/redis.ts              # loga eventos de conexão
-│   │   ├── controllers/user.controller.ts
-│   │   ├── middlewares/
-│   │   │   ├── transportEncryption.ts    # de/para AES-GCM
-│   │   │   ├── authMiddleware.ts         # blacklist + expiração JWT
-│   │   │   └── rateLimit.ts
-│   │   ├── utils/
-│   │   │   ├── encryption.ts             # criptografa telefone
-│   │   │   ├── logger.ts                 # pino multistream
-│   │   │   └── transportEncryption.ts    # helpers AES
-│   │   └── index.ts                      # aplica middlewares e healthcheck
-│   ├── Dockerfile            # build server (produção)
-│   ├── Dockerfile.unit / integration / e2e
-│   ├── jest.*.config.js
-│   └── package.json
-├── logs/
-│   └── .gitignore            # mantém pasta versionada, oculta arquivos
-├── docker-compose.yml
-└── README.md
+.
+├─ .github/workflows/ci.yml        # Pipeline CI: lint/build/scans/bench + artefatos
+├─ db/
+│  └─ init.sql                     # Schema inicial do PostgreSQL
+├─ front/
+│  ├─ Dockerfile                   # Build do front + Nginx (produção)
+│  ├─ nginx.conf                   # Reverse proxy + TLS (certificados locais)
+│  ├─ nginx.main.conf              # Configuração base do Nginx
+│  ├─ package.json                 # Scripts de dev/build/lint/format
+│  ├─ src/
+│  │  ├─ api/
+│  │  │  ├─ client.ts              # Axios + interceptors (camada AES-GCM)
+│  │  │  └─ auth.ts                # Endpoints de auth (login/MFA/senha)
+│  │  ├─ components/
+│  │  │  ├─ Header.tsx             # Header com navegação/autenticação
+│  │  │  ├─ PasswordInput.tsx      # Campo de senha com mostrar/ocultar
+│  │  │  └─ PasswordRequirements.tsx # Checklist dinâmico de requisitos
+│  │  ├─ contexts/
+│  │  │  ├─ AuthContext.tsx        # Contexto de autenticação
+│  │  │  └─ useAuth.ts             # Hook para consumir o contexto
+│  │  ├─ layouts/
+│  │  │  ├─ AppLayout.tsx          # Layout autenticado
+│  │  │  └─ AuthLayout.tsx         # Layout de autenticação
+│  │  ├─ pages/
+│  │  │  ├─ DashboardPage.tsx      # Página protegida
+│  │  │  └─ auth/
+│  │  │     ├─ LoginPage.tsx       # Login + 2FA (SMS)
+│  │  │     ├─ RegisterPage.tsx    # Cadastro com validação de senha forte
+│  │  │     └─ ChangePasswordPage.tsx # Troca de senha
+│  │  ├─ utils/
+│  │  │  ├─ passwordRules.ts       # Regras de senha (compartilhadas)
+│  │  │  └─ transportEncryption.ts # AES-GCM no front (transporte)
+│  │  ├─ styles/                   # Theming e estilos globais
+│  │  ├─ App.tsx                   # Composição de rotas/layouts
+│  │  └─ main.tsx                  # Bootstrap da aplicação
+│  └─ public/favicon.ico           # Ícone da aplicação
+├─ server/
+│  ├─ Dockerfile                   # Build da API (produção)
+│  ├─ src/
+│  │  ├─ index.ts                  # App Express + middlewares + rotas
+│  │  ├─ configs/
+│  │  │  ├─ db.ts                  # Conexão PostgreSQL
+│  │  │  └─ redis.ts               # Conexão Redis (rate limit/blacklist)
+│  │  ├─ controllers/
+│  │  │  └─ user.controller.ts     # Fluxos de autenticação/usuário
+│  │  ├─ middlewares/
+│  │  │  ├─ authMiddleware.ts      # JWT + blacklist de tokens
+│  │  │  ├─ errorHandler.ts        # Tratamento centralizado de erros
+│  │  │  ├─ rateLimit.ts           # Rate limit baseado em Redis
+│  │  │  ├─ transportEncryption.ts # AES-GCM (camada de transporte)
+│  │  │  └─ validateBody.ts        # Validação de payload
+│  │  ├─ routes/
+│  │  │  ├─ index.ts               # Router raiz
+│  │  │  └─ users.routes.ts        # Rotas de usuários/autenticação
+│  │  ├─ services/
+│  │  │  └─ sms.ts                 # Envio de SMS (mockável)
+│  │  ├─ utils/
+│  │  │  ├─ encryption.ts          # Criptografia em repouso (AES-GCM)
+│  │  │  ├─ jwt.ts                 # Geração/validação de tokens JWT
+│  │  │  ├─ logger.ts              # Logger Pino com redactions
+│  │  │  └─ transportEncryption.ts # Helpers AES compartilhados
+│  │  └─ types/express/index.d.ts  # Tipagens auxiliares (ex.: req.user)
+├─ http/requests.http              # Exemplos REST (VSCode REST Client)
+├─ logs/.gitignore                 # Mantém pasta de logs versionada
+├─ docker-compose.yml              # Orquestração local (prod-like)
+└─  docker-compose.ci.yml           # Orquestração para CI (bench/security)
 ```
 
 ---
