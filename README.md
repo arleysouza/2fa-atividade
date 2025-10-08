@@ -97,7 +97,7 @@ Além dos fluxos E2E usuais (cadastro, login, MFA, troca de senha, logout), o pr
 ├─ http/requests.http              # Exemplos REST (VSCode REST Client)
 ├─ logs/.gitignore                 # Mantém pasta de logs versionada
 ├─ docker-compose.yml              # Orquestração local (prod-like)
-└─  docker-compose.ci.yml           # Orquestração para CI (bench/security)
+└─ docker-compose.ci.yml           # Orquestração para CI (bench/security)
 ```
 
 ---
@@ -113,15 +113,7 @@ cd app
 
 2. **Gerar certificados autoassinados**
 
-Crie `front/certs` e gere as chaves. Exemplos:
-
-PowerShell (Windows):
-
-```powershell
-mkdir .\front\certs
-openssl genrsa -out front\certs\privkey.pem 2048
-openssl req -x509 -nodes -days 365 -new -key front\certs\privkey.pem -out front\certs\fullchain.pem
-```
+O comando a seguir pode ser executado na pasta `app` para gerar as chaves em `front/certs`:
 
 Bash (Linux/macOS/Git Bash):
 
@@ -131,6 +123,9 @@ openssl genrsa -out front/certs/privkey.pem 2048
 openssl req -x509 -nodes -days 365 -new -key front/certs/privkey.pem -out front/certs/fullchain.pem
 ```
 
+Os certificados ficam no front porque é o Nginx (no container do front) que termina o TLS. O backend (“server-app”) roda atrás do proxy, falando HTTP apenas na rede Docker interna.  
+O `server-app` não expõe porta no host e recebe chamadas via proxy do Nginx pela rede `app-network`. Simples e seguro: um único ponto de TLS, cabeçalhos de segurança e CSP no Nginx, e menos complexidade no Node.
+
 3. **Subir a aplicação**
 
 ```bash
@@ -138,14 +133,12 @@ docker compose up --build -d
 ```
 
 O `front-app` (Nginx) expõe:
-
 - HTTPS: https://localhost:3443
 - HTTP opcional: http://localhost:3002 (apenas para testes)
 
 O `server-app` fica restrito à rede Docker (`app-network`); todo acesso passa pelo proxy.
 
 Para encerrar:
-
 ```bash
 docker compose down -v
 ```
@@ -193,19 +186,74 @@ Arquivo `front/nginx.conf`:
 
 ---
 
+## Configurações do Nginx
+
+- Arquivos principais
+  - `front/nginx.main.conf`: configuração “global” do Nginx (usuário `nginx`, logs, formatos, `include /etc/nginx/conf.d/*.conf`).
+  - `front/nginx.conf`: configuração do servidor de produção (HTTPS na porta 443 + redirecionamento 80→443, proxy da API e SPA).
+  - `front/nginx.ci.conf`: variante para CI (somente HTTP, sem HSTS/TLS) usada em pipelines e benchmarks.
+
+- Servidor HTTPS (produção)
+  - `listen 443 ssl;` com certificados montados via volume em `/etc/nginx/certs` (`fullchain.pem` e `privkey.pem`).
+  - Cabeçalhos de segurança: HSTS, `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy` e `Content-Security-Policy` restritiva.
+  - SPA: `root /usr/share/nginx/html; index index.html;` com fallback `try_files $uri /index.html` para suportar React Router.
+  - Cache de estáticos: regra para `ico|css|js|gif|jpg|png|woff|ttf|svg|eot` com `expires 6M` e `Cache-Control: public`.
+  - Erros: `error_page 404 /index.html;` para manter navegação SPA.
+
+- Proxy da API
+  - Rota: `location /api/ { proxy_pass http://server-app:3000/; ... }` encaminha para o backend apenas pela rede Docker (`app-network`).
+  - Encaminha cabeçalhos de origem e cliente: `Host`, `X-Real-IP`, `X-Forwarded-For`, `X-Forwarded-Proto`.
+  - O serviço `server-app` não publica portas no host; o acesso externo passa exclusivamente pelo Nginx.
+
+- Redirecionamento HTTP→HTTPS
+  - Segundo bloco de `server` escuta `80` e faz `301` para `https://$host:3443$request_uri`.
+  - O mapeamento de portas é definido em `docker-compose.yml`: `FRONT_HOST_PORT`→80 e `FRONT_HOST_PORT_SSL`→443 (por padrão 3002 e 3443).
+
+- Integração com Docker
+  - `docker-compose.yml` monta `./front/certs:/etc/nginx/certs:ro` e deixa o container do Nginx como `read_only`.
+  - `tmpfs` para `/var/cache/nginx`, `/var/run` e `/var/log/nginx` evita escrita em disco no container imutável.
+  - Healthcheck do `front-app` usa HTTP interno (`wget http://127.0.0.1:80/`) para simplicidade e compatibilidade.
+
+- CI (nginx.ci.conf)
+  - Mantém as mesmas rotas e proxy de `/api/`, porém sem TLS e sem HSTS para reduzir complexidade durante pipeline.
+  - Cabeçalhos de segurança relevantes permanecem ativos mesmo em HTTP (exceto HSTS).
+
+Referência rápida
+- Certificados: gere `fullchain.pem` e `privkey.pem` em `front/certs/` (já descrito na seção de execução local).
+- Variáveis: ajuste `FRONT_HOST_PORT` e `FRONT_HOST_PORT_SSL` no `.env` para controlar portas expostas no host.  
+
+
+---
+
 ## 🤖 Pipeline GitHub Actions
+
 
 `.github/workflows/ci.yml` executa:
 
-1. **Lint & Prettier** (front + server)
-2. **Build** (server)
-3. **Tests** (unit, integration, e2e – frente e verso)
+1. Lint & Prettier (Server): `npm ci --prefix server`, `npm run lint --prefix server`, `npm run format:check --prefix server`.
+2. Lint & Prettier (Front): `npm ci --prefix front`, `npm run lint --prefix front`, `npm run format:check --prefix front`.
+3. Build TypeScript (Server): `npm run build --prefix server`.
+4. Trivy Scan (Imagem Docker): build da imagem `server/Dockerfile`, saída em tabela (sem falhar o job) e relatório JSON `trivy-report.json` como artefato.
+5. Snyk Scan (Node.js): análise de dependências com severidade `high` (requer `SNYK_TOKEN`); relatório JSON `snyk-node-report.json` como artefato.
+6. Docker Bench Security: compõe stack com `docker-compose.yml + docker-compose.ci.yml`, aguarda healthchecks, executa `docker/docker-bench-security` e desmonta.
 
-Artefatos como cobertura Jest e relatórios Playwright são publicados ao final.
+Detalhes
+- Disparo: `push` e `pull_request` para `main`.
+- Concurrency: cancela execuções em andamento do mesmo `ref`.
+- Artefatos: `trivy-report`, `snyk-node-report`.
+- Sem testes: a pipeline atual não executa unit/integration/E2E.
 
-```
-Commit → GitHub Actions → {Lint, Build, Unit, Integration, E2E}
-```
+Fluxo resumido
+Commit → Lint (front/server) → Build (server) → Trivy + Snyk + Bench
+
+📌 Para rodar o Snyk no seu pipeline, é necessário configurar o `SNYK_TOKEN` no repositório:
+
+Crie uma conta gratuita em https://snyk.io
+Acesse https://app.snyk.io/account e copie o token gerado - será algo como `xxxxxxxx-xxxx-xxxx-xxxxxxxxxxxxxxxx`.
+No GitHub acesse **Settings** > **Secrets and variables** > **Actions** > **New repository secret**.
+Nome: `SNYK_TOKEN`
+Valor: cole o token gerado  
+
 
 ---
 
