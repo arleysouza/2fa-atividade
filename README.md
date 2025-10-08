@@ -117,13 +117,6 @@ cd app
 
 Gere as chaves em `front/certs` (o Nginx do front termina o TLS):
 
-PowerShell (Windows)
-```powershell
-mkdir .\front\certs
-openssl genrsa -out front\certs\privkey.pem 2048
-openssl req -x509 -nodes -days 365 -new -key front\certs\privkey.pem -out front\certs\fullchain.pem
-```
-
 Bash (Linux/macOS/Git Bash)
 ```bash
 mkdir -p front/certs
@@ -131,7 +124,19 @@ openssl genrsa -out front/certs/privkey.pem 2048
 openssl req -x509 -nodes -days 365 -new -key front/certs/privkey.pem -out front/certs/fullchain.pem
 ```
 
-3) Subir a aplicação
+3) Configurar variáveis de ambiente do Twilio
+
+Antes de subir os containers, configure no arquivo `.env` (na pasta `app/`):
+
+```bash
+TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+TWILIO_AUTH_TOKEN=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+TWILIO_FROM_NUMBER=+15551234567
+```
+
+Como obter e dicas de uso estão na seção "Variáveis de Ambiente do Twilio" abaixo. Sem essas variáveis, o backend falhará ao enviar o SMS de MFA no login.
+
+4) Subir a aplicação
 
 ```bash
 docker compose up --build -d
@@ -272,3 +277,63 @@ Segurança
 - Logs: `tail -f logs/server/server.log` para acompanhar o tráfego cifrado e eventos.
 - Limpeza: `docker compose down -v` remove containers e volumes (dados de Postgres/Redis).
 
+---
+
+## Fluxograma – Registro de Usuário
+
+```text
+[Usuário]
+   |
+   v
+[front/src/pages/auth/RegisterPage.tsx]
+   |  (validação visual)
+   |-- usa --> [front/src/components/PasswordRequirements.tsx]
+   |-- usa --> [front/src/components/PasswordInput.tsx]
+   |
+   v (submit)
+[front/src/contexts/AuthContext.tsx]  --chama-->  [front/src/api/auth.ts::register]
+   |
+   v (request)
+[front/src/api/client.ts (Axios)]
+   |  - baseURL: /api (Nginx proxy)
+   |  - adiciona headers: X-Transport-Encrypted / X-Transport-Accept-Encrypted
+   |  - cifra payload com AES‑GCM
+   |      usando [front/src/utils/transportEncryption.ts]
+   v
+[Nginx (front/nginx.conf)]  location /api/  --> proxy_pass http://server-app:3000/
+   v
+[server/src/index.ts]
+   |  - decryptTransportMiddleware (se header presente)
+   |       usa [server/src/utils/transportEncryption.ts]
+   |  - cookieParser, logger, etc.
+   v
+[server/src/routes/index.ts]  →  /users
+   v
+[server/src/routes/users.routes.ts]
+   |  POST /users
+   |  - validateBody (username, password, phone E.164)
+   v
+[server/src/controllers/user.controller.ts::createUser]
+   |  - bcrypt.hash(password)
+   |  - encrypt(phone) usando [server/src/utils/encryption.ts] (AES‑GCM, DATA_ENCRYPTION_KEY)
+   |  - INSERT em users (db/init.sql; unicidade via trigger)
+   v
+[PostgreSQL]
+   |
+   v (201 Created)
+[server/src/index.ts]
+   |  - encryptResponseMiddleware (se cliente aceitar criptografado)
+   v
+[Nginx] → [Axios interceptors] → (decifra resposta se necessário)
+   v
+[Front-end]
+   |  - navega para /login ao sucesso
+   v
+Fim
+```
+
+Arquivos chave do fluxo
+- Front: `front/src/pages/auth/RegisterPage.tsx`, `front/src/contexts/AuthContext.tsx`, `front/src/api/auth.ts`, `front/src/api/client.ts`, `front/src/utils/transportEncryption.ts`.
+- Nginx: `front/nginx.conf` (proxy `/api`).
+- Back: `server/src/index.ts`, `server/src/routes/users.routes.ts`, `server/src/controllers/user.controller.ts`, `server/src/middlewares/validateBody.ts`, `server/src/middlewares/transportEncryption.ts`, `server/src/utils/encryption.ts`.
+- DB: `db/init.sql` (schema e trigger de unicidade de username).
