@@ -241,18 +241,18 @@ Detalhes
 - Disparo: `push` e `pull_request` para `main`.
 - Concurrency: cancela execuções em andamento do mesmo `ref`.
 - Artefatos: `trivy-report`, `snyk-node-report`.
-- Sem testes: a pipeline atual não executa unit/integration/E2E.
+- Sem testes: a pipeline atual não executa unit/integration/E2E.  
 
 Fluxo resumido
-Commit → Lint (front/server) → Build (server) → Trivy + Snyk + Bench
+Commit → Lint (front/server) → Build (server) → Trivy + Snyk + Bench  
 
 📌 Para rodar o Snyk no seu pipeline, é necessário configurar o `SNYK_TOKEN` no repositório:
 
-Crie uma conta gratuita em https://snyk.io
-Acesse https://app.snyk.io/account e copie o token gerado - será algo como `xxxxxxxx-xxxx-xxxx-xxxxxxxxxxxxxxxx`.
-No GitHub acesse **Settings** > **Secrets and variables** > **Actions** > **New repository secret**.
-Nome: `SNYK_TOKEN`
-Valor: cole o token gerado  
+    - Crie uma conta gratuita em https://snyk.io
+    - Acesse https://app.snyk.io/account e copie o token gerado - será algo como `xxxxxxxx-xxxx-xxxx-xxxxxxxxxxxxxxxx`.
+    - No GitHub acesse **Settings** > **Secrets and variables** > **Actions** > **New repository secret**.
+        Nome: `SNYK_TOKEN`
+        Valor: cole o token gerado  
 
 
 ---
