@@ -35,7 +35,7 @@ export const decryptTransportMiddleware = (
   if (!isTransportPayload(req.body)) {
     res.status(400).json({
       success: false,
-      error: "Invalid encrypted payload",
+      error: "Payload criptografado inválido.",
     });
     return;
   }
@@ -46,8 +46,8 @@ export const decryptTransportMiddleware = (
     req.body = parsed;
     next();
   } catch (error) {
-    logger.warn({ err: error }, "Failed to decrypt transport payload");
-    res.status(400).json({ success: false, error: "Could not decrypt payload" });
+    logger.warn({ err: error }, "Falha ao descriptografar o payload de transporte");
+    res.status(400).json({ success: false, error: "Não foi possível descriptografar o payload." });
   }
 };
 
@@ -68,9 +68,9 @@ export const encryptResponseMiddleware = (
       const encryptedPayload = encryptTransportPayload(body);
       return originalJson({ encrypted: true, payload: encryptedPayload });
     } catch (error) {
-      logger.error({ err: error }, "Failed to encrypt response payload");
+      logger.error({ err: error }, "Falha ao criptografar o payload da resposta");
       res.status(500);
-      return originalJson({ success: false, error: "Encryption error" });
+      return originalJson({ success: false, error: "Erro de criptografia." });
     }
   }) as JsonResponder;
 

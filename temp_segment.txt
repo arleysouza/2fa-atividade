@@ -1,0 +1,11 @@
+>export const verifyMfaCode = async (req: Request, res: Response): Promise<void> => {
+>  const { username, code } = (req.body ?? {}) as { username?: string; code?: string };
+>  const providedUsername = String(username ?? "");
+>  try {
+>    const normalizedCode = String(code ?? "").trim();
+>
+>    if (!/^\d{3}$/.test(normalizedCode)) {
+>      res.status(400).json({ success: false, error: "Código de verificação inválido." });
+>      return;
+>    }
+>

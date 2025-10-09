@@ -13,14 +13,14 @@ const redisOptions: RedisOptions = {
   retryStrategy: (times) => Math.min(times * 50, 2000),
 };
 
-// So adiciona a senha se estiver definida
+// Só adiciona a senha se estiver definida
 if (redisPassword) {
   redisOptions.password = redisPassword;
 }
 
 const redisClient = new Redis(redisOptions);
 
-redisClient.on("connect", () => logger.info("Conexao com Redis estabelecida"));
+redisClient.on("connect", () => logger.info("Conexão com Redis estabelecida"));
 redisClient.on("error", (err) => logger.error({ err }, "Erro no Redis"));
 
 export default redisClient;

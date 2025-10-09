@@ -11,7 +11,7 @@ const getClient = () => {
   const authToken = process.env.TWILIO_AUTH_TOKEN;
 
   if (!accountSid || !authToken) {
-    throw new Error("Twilio credentials are not configured");
+    throw new Error("Credenciais do Twilio não estão configuradas.");
   }
 
   client = twilio(accountSid, authToken);
@@ -22,7 +22,7 @@ export const sendSms = async (to: string, body: string): Promise<void> => {
   const from = process.env.TWILIO_FROM_NUMBER;
 
   if (!from) {
-    throw new Error("Twilio sender number (TWILIO_FROM_NUMBER) is not configured");
+    throw new Error("Número remetente do Twilio (TWILIO_FROM_NUMBER) não está configurado.");
   }
 
   await getClient().messages.create({

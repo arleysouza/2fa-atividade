@@ -10,7 +10,7 @@ type TransportPayload = {
 const KEY_HEX = process.env.TRANSPORT_ENCRYPTION_KEY;
 
 if (!KEY_HEX) {
-  throw new Error("TRANSPORT_ENCRYPTION_KEY is not configured");
+  throw new Error("TRANSPORT_ENCRYPTION_KEY não está configurada.");
 }
 
 let key: Buffer;
@@ -18,11 +18,11 @@ let key: Buffer;
 try {
   key = Buffer.from(KEY_HEX, "hex");
   if (key.length !== 32) {
-    throw new Error("Invalid key length");
+    throw new Error("Comprimento de chave inválido.");
   }
 } catch (error) {
-  logger.error({ err: error }, "Invalid transport encryption key");
-  throw new Error("TRANSPORT_ENCRYPTION_KEY must be a 64 character hex string (32 bytes)");
+  logger.error({ err: error }, "Chave de criptografia de transporte inválida");
+  throw new Error("TRANSPORT_ENCRYPTION_KEY deve ser uma string hexadecimal de 64 caracteres (32 bytes).");
 }
 
 const ALGORITHM = "aes-256-gcm";
@@ -44,11 +44,11 @@ export const encryptTransportPayload = (payload: unknown): TransportPayload => {
 
 export const decryptTransportPayload = (payload: TransportPayload): string => {
   if (!payload || typeof payload !== "object") {
-    throw new Error("Invalid transport payload");
+    throw new Error("Payload de transporte inválido.");
   }
   const { iv, authTag, ciphertext } = payload;
   if (!iv || !authTag || !ciphertext) {
-    throw new Error("Incomplete transport payload");
+    throw new Error("Payload de transporte incompleto.");
   }
 
   const ivBuffer = Buffer.from(iv, "hex");

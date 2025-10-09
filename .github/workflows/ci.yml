@@ -147,11 +147,19 @@ jobs:
 
       - name: 🛡 Run Docker Bench Security
         run: |
+          mkdir -p bench-logs
           docker run --rm --net host --pid host --userns host \
             --cap-add audit_control \
             -v /var/lib:/var/lib:ro \
             -v /var/run/docker.sock:/var/run/docker.sock:ro \
+            -v "$PWD/bench-logs":/usr/local/bin/log \
             docker/docker-bench-security || true
+
+      - name: 📤 Upload Docker Bench Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-bench-security-report
+          path: bench-logs/
 
       - name: 🛑 Stop containers
         if: always()

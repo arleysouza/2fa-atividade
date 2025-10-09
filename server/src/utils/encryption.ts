@@ -4,7 +4,7 @@ import { logger } from "./logger";
 const KEY_HEX = process.env.DATA_ENCRYPTION_KEY;
 
 if (!KEY_HEX) {
-  throw new Error("A variavel de ambiente DATA_ENCRYPTION_KEY nao esta configurada.");
+  throw new Error("A variável de ambiente DATA_ENCRYPTION_KEY não está configurada.");
 }
 
 let key: Buffer;
@@ -12,17 +12,17 @@ let key: Buffer;
 try {
   key = Buffer.from(KEY_HEX, "hex");
   if (key.length !== 32) {
-    throw new Error("Comprimento invalido");
+    throw new Error("Comprimento inválido");
   }
 } catch (error: any) {
-  logger.error({ err: error }, "Falha ao carregar chave de criptografia");
+  logger.error({ err: error }, "Falha ao carregar a chave de criptografia");
   throw new Error(
     "DATA_ENCRYPTION_KEY deve ser uma string hexadecimal de 32 bytes (64 caracteres).",
   );
 }
 
 const ALGORITHM = "aes-256-gcm";
-const IV_LENGTH = 12; // 96 bits recomendado
+const IV_LENGTH = 12; // 96 bits recomendados
 
 export const encrypt = (plaintext: string): string => {
   const iv = crypto.randomBytes(IV_LENGTH);
@@ -36,7 +36,7 @@ export const encrypt = (plaintext: string): string => {
 export const decrypt = (payload: string): string => {
   const [ivHex, ciphertextHex, authTagHex] = payload.split(":");
   if (!ivHex || !ciphertextHex || !authTagHex) {
-    throw new Error("Payload criptografado invalido");
+    throw new Error("Payload criptografado inválido");
   }
 
   const iv = Buffer.from(ivHex, "hex");

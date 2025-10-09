@@ -11,7 +11,7 @@ import { encrypt, decrypt } from "../utils/encryption";
 
 import { logger } from "../utils/logger";
 
-// --- Criar usuario ---
+// --- Criar usuário ---
 export const createUser = async (req: Request, res: Response): Promise<void> => {
   try {
     const { username, password, phone } = req.body;
@@ -27,22 +27,22 @@ export const createUser = async (req: Request, res: Response): Promise<void> => 
 
     res.status(201).json({
       success: true,
-      data: { message: "Usuario criado com sucesso." },
+      data: { message: "Usuário criado com sucesso." },
     });
   } catch (error: any) {
     if (error.code === "23505") {
       res.status(400).json({
         success: false,
-        error: error.message || "Nome de usuario ja cadastrado. Escolha outro.",
+        error: error.message || "Nome de usuário já cadastrado. Escolha outro.",
       });
       return;
     }
 
-    res.status(500).json({ success: false, error: "Erro ao criar usuario." });
+    res.status(500).json({ success: false, error: "Erro ao criar usuário." });
   }
 };
 
-// --- Login de usuario ---
+// --- Login de usuário ---
 export const loginUser = async (req: Request, res: Response): Promise<void> => {
   const { username, password } = (req.body ?? {}) as { username?: string; password?: string };
   const providedUsername = String(username ?? "");
@@ -76,7 +76,7 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
       if (newAttempts >= 3) {
         res.status(429).json({
           success: false,
-          error: "Numero maximo de tentativas excedido. Aguarde alguns minutos e tente novamente.",
+          error: "Número máximo de tentativas excedido. Aguarde alguns minutos e tente novamente.",
         });
         return;
       }
@@ -84,7 +84,7 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
       const remaining = Math.max(0, 3 - newAttempts);
       res.status(401).json({
         success: false,
-        error: `Credenciais invalidas. Restam ${remaining} tentativa(s).`,
+        error: `Credenciais inválidas. Restam ${remaining} tentativa(s).`,
       });
       return;
     }
@@ -96,9 +96,9 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
     } catch (decryptError) {
       logger.error(
         { err: decryptError, username: providedUsername || undefined },
-        "Erro ao descriptografar telefone do usuario",
+        "Erro ao descriptografar telefone do usuário",
       );
-      res.status(500).json({ success: false, error: "Erro interno ao acessar dados do usuario." });
+      res.status(500).json({ success: false, error: "Erro interno ao acessar dados do usuário." });
       return;
     }
     user.phone = decryptedPhone;
@@ -113,7 +113,7 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
       if (newAttempts >= 3) {
         res.status(429).json({
           success: false,
-          error: "Numero maximo de tentativas excedido. Aguarde alguns minutos e tente novamente.",
+          error: "Número máximo de tentativas excedido. Aguarde alguns minutos e tente novamente.",
         });
         return;
       }
@@ -121,7 +121,7 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
       const remaining = Math.max(0, 3 - newAttempts);
       res.status(401).json({
         success: false,
-        error: `Credenciais invalidas. Restam ${remaining} tentativa(s).`,
+        error: `Credenciais inválidas. Restam ${remaining} tentativa(s).`,
       });
       return;
     }
@@ -137,14 +137,14 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
       await redisClient.setex(cacheKey, 120, verificationCode);
       await sendSms(
         user.phone,
-        `Seu codigo de verificacao e ${verificationCode}. Ele expira em 2 minutos.`,
+        `Seu código de verificação é ${verificationCode}. Ele expira em 2 minutos.`,
       );
     } catch (smsError: any) {
       await redisClient.del(cacheKey).catch(() => undefined);
       logger.error({ err: smsError, userId: user.id }, "Erro ao enviar SMS de MFA");
       res.status(500).json({
         success: false,
-        error: "Nao foi possivel enviar o codigo de verificacao. Tente novamente.",
+        error: "Não foi possível enviar o código de verificação. Tente novamente.",
       });
       return;
     }
@@ -153,7 +153,7 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
     res.status(200).json({
       success: true,
       data: {
-        message: "Codigo de verificacao enviado por SMS.",
+        message: "Código de verificação enviado por SMS.",
         requires2FA: true,
         user: { id: user.id, username: user.username, phone: decryptedPhone },
       },
@@ -192,9 +192,9 @@ export const verifyMfaCode = async (req: Request, res: Response): Promise<void> 
     } catch (decryptError) {
       logger.error(
         { err: decryptError, username: providedUsername || undefined },
-        "Erro ao descriptografar telefone do usuario",
+        "Erro ao descriptografar telefone do usuário",
       );
-      res.status(500).json({ success: false, error: "Erro interno ao acessar dados do usuario." });
+      res.status(500).json({ success: false, error: "Erro interno ao acessar dados do usuário." });
       return;
     }
     user.phone = decryptedPhone;
@@ -218,7 +218,7 @@ export const verifyMfaCode = async (req: Request, res: Response): Promise<void> 
       await redisClient.del(attemptsKey).catch(() => undefined);
       res.status(400).json({
         success: false,
-        error: "Codigo expirado ou inexistente. Solicite um novo login.",
+        error: "Código expirado ou inexistente. Solicite um novo login.",
       });
       return;
     }
@@ -271,23 +271,23 @@ export const verifyMfaCode = async (req: Request, res: Response): Promise<void> 
   } catch (error: any) {
     logger.error(
       { err: error, username: providedUsername || undefined },
-      "Erro ao verificar codigo de duas etapas",
+      "Erro ao verificar código de duas etapas",
     );
     res.status(500).json({ success: false, error: "Erro ao verificar código de duas etapas." });
   }
 };
 
-// --- Logout de usuario ---
+// --- Logout de usuário ---
 // O token será adicionado ao Redis blacklist até expirar
 export const logoutUser = async (req: Request, res: Response): Promise<void> => {
   const currentUser = req.user as (UserPayload & { exp?: number }) | undefined;
   try {
-    // `authMiddleware` ja validou o token, basta recupera-lo
+    // `authMiddleware` já validou o token, basta recuperá-lo
     const token = req.headers.authorization!.split(" ")[1];
 
     const exp = currentUser?.exp;
     if (!exp) {
-      res.status(400).json({ success: false, error: "Token invalido" });
+      res.status(400).json({ success: false, error: "Token inválido" });
       return;
     }
 
@@ -300,7 +300,7 @@ export const logoutUser = async (req: Request, res: Response): Promise<void> => 
     if (ttl > 0) {
       await redisClient.setex(`blacklist:jwt:${tokenHash}`, ttl, "true");
     } else {
-      // Se ja expirou, ainda adiciona por 60s para evitar race condition
+      // Se já expirou, ainda adiciona por 60s para evitar race condition
       await redisClient.setex(`blacklist:jwt:${tokenHash}`, 60, "true");
     }
 
@@ -314,14 +314,14 @@ export const logoutUser = async (req: Request, res: Response): Promise<void> => 
   }
 };
 
-// --- Alterar senha do usuario ---
+// --- Alterar senha do usuário ---
 export const changePassword = async (req: Request, res: Response): Promise<void> => {
   const currentUser = req.user as UserPayload | undefined;
   try {
-    // `authMiddleware` ja populou req.user
+    // `authMiddleware` já populou req.user
     const userId = currentUser?.id;
     if (!userId) {
-      res.status(401).json({ success: false, error: "Usuario nao autenticado" });
+      res.status(401).json({ success: false, error: "Usuário não autenticado" });
       return;
     }
     const { oldPassword, newPassword } = req.body;

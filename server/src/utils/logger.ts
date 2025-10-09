@@ -58,7 +58,7 @@ function buildConsoleStream(): DestinationStream {
       ignore: "pid,hostname",
     });
   } catch {
-    // Unable to load pretty printer (probably not installed). Fallback to default stream.
+    // Não foi possível carregar o pretty printer (provavelmente não instalado). Voltando ao stream padrão.
     return pino.destination({ sync: false });
   }
 }
@@ -71,7 +71,7 @@ function buildFileStream(): DestinationStream | null {
   try {
     fs.mkdirSync(LOG_DIR, { recursive: true });
   } catch {
-    // If the directory cannot be created, skip file logging to keep the app running.
+    // Se o diretório não puder ser criado, pule logs em arquivo para manter o app em execução.
     return null;
   }
 
@@ -105,9 +105,9 @@ export const httpLogger = pinoHttp({
   autoLogging: {
     ignore: (req) => req.url === "/health",
   },
-  customReceivedMessage: (req) => `request received: ${req.method ?? ""} ${req.url ?? ""}`.trim(),
+  customReceivedMessage: (req) => `requisição recebida: ${req.method ?? ""} ${req.url ?? ""}`.trim(),
   customSuccessMessage: (req, res) =>
-    `request completed: ${req.method ?? ""} ${req.url ?? ""} ${res.statusCode}`.trim(),
+    `requisição concluída: ${req.method ?? ""} ${req.url ?? ""} ${res.statusCode}`.trim(),
   customErrorMessage: (req, res, error) =>
-    `request errored: ${req.method ?? ""} ${req.url ?? ""} ${res.statusCode} - ${error?.message ?? "unknown"}`.trim(),
+    `requisição com erro: ${req.method ?? ""} ${req.url ?? ""} ${res.statusCode} - ${error?.message ?? "desconhecido"}`.trim(),
 });

@@ -26,7 +26,7 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
     if (isBlacklisted) {
       res.status(401).json({
         success: false,
-        error: "Token expirado ou invalido",
+        error: "Token expirado ou inválido",
       });
       return;
     }
@@ -37,10 +37,10 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
     req.user = payload; // tipado via types/express/index.d.ts
     next();
   } catch (error) {
-    logger.error({ err: error }, "Erro no middleware de autenticacao");
+    logger.error({ err: error }, "Erro no middleware de autenticação");
     res.status(401).json({
       success: false,
-      error: "Token invalido ou expirado",
+      error: "Token inválido ou expirado",
     });
   }
 }
