@@ -147,13 +147,16 @@ jobs:
 
       - name: 🛡 Run Docker Bench Security
         run: |
+          set -e
           mkdir -p bench-logs
           docker run --rm --net host --pid host --userns host \
             --cap-add audit_control \
+            -v /etc:/etc:ro \
             -v /var/lib:/var/lib:ro \
             -v /var/run/docker.sock:/var/run/docker.sock:ro \
-            -v "$PWD/bench-logs":/usr/local/bin/log \
-            docker/docker-bench-security || true
+            -v "$PWD/bench-logs":/output \
+            docker/docker-bench-security -l /output/docker-bench-security.log || true
+          ls -la bench-logs || true
 
       - name: 📤 Upload Docker Bench Report
         uses: actions/upload-artifact@v4
