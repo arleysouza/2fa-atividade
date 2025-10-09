@@ -105,7 +105,8 @@ export const httpLogger = pinoHttp({
   autoLogging: {
     ignore: (req) => req.url === "/health",
   },
-  customReceivedMessage: (req) => `requisição recebida: ${req.method ?? ""} ${req.url ?? ""}`.trim(),
+  customReceivedMessage: (req) =>
+    `requisição recebida: ${req.method ?? ""} ${req.url ?? ""}`.trim(),
   customSuccessMessage: (req, res) =>
     `requisição concluída: ${req.method ?? ""} ${req.url ?? ""} ${res.statusCode}`.trim(),
   customErrorMessage: (req, res, error) =>

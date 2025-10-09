@@ -22,7 +22,9 @@ try {
   }
 } catch (error) {
   logger.error({ err: error }, "Chave de criptografia de transporte inválida");
-  throw new Error("TRANSPORT_ENCRYPTION_KEY deve ser uma string hexadecimal de 64 caracteres (32 bytes).");
+  throw new Error(
+    "TRANSPORT_ENCRYPTION_KEY deve ser uma string hexadecimal de 64 caracteres (32 bytes).",
+  );
 }
 
 const ALGORITHM = "aes-256-gcm";
