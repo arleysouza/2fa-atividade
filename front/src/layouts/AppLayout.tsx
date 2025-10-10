@@ -54,7 +54,7 @@ const AppLayout = ({ children }: Props) => {
       <Header />
       <ContentWrapper>
         <Sidebar>
-          <h3>Teste de Frontend</h3>
+          <h3>Frontend</h3>
           <nav>
             <Link to="/dashboard">Dashboard</Link>
             <Link to="/change-password">Alterar Senha</Link>

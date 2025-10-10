@@ -9,28 +9,28 @@ import {
 } from "./middlewares/transportEncryption";
 import { httpLogger, logger } from "./utils/logger";
 
-// Carrega as variaveis de ambiente definidas no arquivo .env
+// Carrega as variáveis de ambiente definidas no arquivo .env
 dotenv.config();
 
-// Inicializa a aplicacao Express
+// Inicializa a aplicação Express
 const app = express();
 
 // Define a porta utilizada pelo servidor
 const PORT = process.env.PORT || 3000;
 
-// Middleware para permitir o envio de dados em formato JSON no corpo das requisicoes
+// Middleware para permitir o envio de dados em formato JSON no corpo das requisições
 app.use(express.json());
 
-// Middleware para permitir o envio de dados em formato URL-encoded no corpo das requisicoes
+// Middleware para permitir o envio de dados em formato URL-encoded no corpo das requisições
 app.use(express.urlencoded({ extended: true }));
 
-// Decrypt incoming payloads when flagged
+// Descriptografa payloads de entrada quando sinalizado
 app.use(decryptTransportMiddleware);
 
 // Middleware para cookies
 app.use(cookieParser());
 
-// Encrypt responses when requested
+// Criptografa respostas quando solicitado
 app.use(encryptResponseMiddleware);
 
 // Logger HTTP (deve vir após os parsers)
@@ -44,15 +44,15 @@ app.get("/health", (_req: Request, res: Response) => {
 // Rotas principais
 app.use("/", router);
 
-// Middleware para rotas nao encontradas
+// Middleware para rotas não encontradas
 app.use((_req: Request, res: Response) => {
   res.status(404).json({
     success: false,
-    error: "Rota nao encontrada",
+    error: "Rota não encontrada",
   });
 });
 
-// Middleware global de erro (sempre por ultimo)
+// Middleware global de erro (sempre por último)
 app.use(errorHandler);
 
 // Inicializa o servidor na porta definida

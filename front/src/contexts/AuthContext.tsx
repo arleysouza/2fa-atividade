@@ -137,7 +137,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     newPassword: string,
   ): Promise<void> => {
     setError(null);
-    if (!token) throw new Error("Usuario nao autenticado");
+    if (!token) throw new Error("Usuário não autenticado");
     try {
       const response = await authApi.changePassword(
         token,

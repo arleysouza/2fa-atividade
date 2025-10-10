@@ -37,7 +37,7 @@ const RegisterPage = () => {
       <h2>Registrar</h2>
       <form onSubmit={handleSubmit} noValidate>
         <input
-          placeholder="UsuÃ¡rio"
+          placeholder="Usuário"
           value={username}
           onChange={(e) => setUsername(e.target.value)}
         />
@@ -58,7 +58,7 @@ const RegisterPage = () => {
       </form>
       {error && <p style={{ color: "red" }}>{error}</p>}
       <p>
-        JÃ¡ tem conta? <Link to="/login">Login</Link>
+        Já tem conta? <Link to="/login">Entrar</Link>
       </p>
     </Container>
   );

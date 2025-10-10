@@ -37,7 +37,7 @@ const ChangePasswordPage = () => {
 
   return (
     <Container>
-      <h2>Alterar Senha</h2>
+      <h2>Alterar senha</h2>
       <form onSubmit={handleSubmit} noValidate>
         <PasswordInput
           placeholder="Senha atual"
@@ -51,7 +51,7 @@ const ChangePasswordPage = () => {
         />
         <PasswordRequirements password={newPassword} />
         <button type="submit" disabled={!newPasswordValid}>
-          Alterar
+          Alterar senha
         </button>
       </form>
       {error && <p style={{ color: "red" }}>{error}</p>}

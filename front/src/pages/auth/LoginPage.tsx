@@ -34,7 +34,7 @@ const LoginPage = () => {
       if (result.success && result.data?.requires2FA) {
         setAwaitingMfa(true);
         setPendingUser(result.data.user ?? null);
-        setMfaMessage(result.data.message ?? "CÃ³digo enviado por SMS.");
+        setMfaMessage(result.data.message ?? "Código enviado por SMS.");
         setCode("");
         return;
       }
@@ -69,7 +69,7 @@ const LoginPage = () => {
       {!awaitingMfa ? (
         <form onSubmit={handleSubmit}>
           <input
-            placeholder="Usuario"
+            placeholder="Usuário"
             value={username}
             onChange={(e) => {
               clearError();
@@ -91,12 +91,12 @@ const LoginPage = () => {
       ) : (
         <>
           <p>
-            {mfaMessage || "Informe o cÃ³digo recebido."}
-            {pendingUser?.phone ? ` NÃºmero: ${pendingUser.phone}` : ""}
+            {mfaMessage || "Informe o código recebido."}
+            {pendingUser?.phone ? ` Número: ${pendingUser.phone}` : ""}
           </p>
           <form onSubmit={handleVerifyMfa}>
             <input
-              placeholder="CÃ³digo"
+              placeholder="Código"
               value={code}
               inputMode="numeric"
               pattern="[0-9]{3}"
@@ -118,7 +118,7 @@ const LoginPage = () => {
       {error && <p style={{ color: "red" }}>{error}</p>}
       {!awaitingMfa && (
         <p>
-          Nao tem conta? <Link to="/register">Registrar</Link>
+          Não tem conta? <Link to="/register">Registrar</Link>
         </p>
       )}
     </AuthLayout>

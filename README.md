@@ -211,12 +211,7 @@ docker compose down -v
 3. Build TypeScript (Server): `npm run build --prefix server`.
 4. Trivy Scan (Imagem Docker): build da imagem `server/Dockerfile`, saída em tabela (sem falhar o job) e relatório JSON `trivy-report.json` como artefato.
 5. Snyk Scan (Node.js): análise de dependências com severidade `high` (requer `SNYK_TOKEN`); relatório JSON `snyk-node-report.json` como artefato.
-6. Docker Bench Security: compõe stack com `docker-compose.yml + docker-compose.ci.yml`, aguarda healthchecks, executa `docker/docker-bench-security` e desmonta.
-
-Detalhes
-- Disparo: `push` e `pull_request` para `main`.
-- Concurrency: cancela execuções em andamento do mesmo `ref`.
-- Artefatos: `trivy-report`, `snyk-node-report`.
+6. Docker Bench Security: compõe stack com `docker-compose.yml + docker-compose.ci.yml`, aguarda healthchecks, executa `docker/docker-bench-security` e desmonta; relatório JSON `docker-bench-security.log` como artefato.
 
 Como configurar o Snyk (token)
 - Crie uma conta em https://snyk.io e copie o token em https://app.snyk.io/account
@@ -247,7 +242,7 @@ Como obter
 - Use formato E.164 para todos os números (ex.: `+55DDDNUMERO`).
 
 Execução local
-- O `docker-compose.yml` injeta as variáveis do `.env` no `server-app`.
+- O `docker-compose.yml` injeta essas variáveis do `.env` no `server-app`.
 - Sem estas variáveis, o backend lança erros ao enviar SMS.
 
 Opções sem SMS real
@@ -257,13 +252,6 @@ Opções sem SMS real
 Segurança
 - Não versione `.env` e não exponha o `Auth Token`. Guarde segredos em variáveis locais/Secrets.
 
----
-
-## Dicas Finais
-
-- Variáveis criptográficas: `TRANSPORT_ENCRYPTION_KEY` (back) e `VITE_TRANSPORT_ENCRYPTION_KEY` (front) devem coincidir.
-- Logs: `tail -f logs/server/server.log` para acompanhar o tráfego cifrado e eventos.
-- Limpeza: `docker compose down -v` remove containers e volumes (dados de Postgres/Redis).
 
 ---
 
