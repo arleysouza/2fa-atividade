@@ -133,7 +133,7 @@ TWILIO_AUTH_TOKEN=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 TWILIO_FROM_NUMBER=+15551234567
 ```
 
-Como obter e dicas de uso estão na seção <a id="variaveis-de-ambiente-do-twilio">Variáveis de Ambiente do Twilio</a>. Sem essas variáveis, o backend falhará ao enviar o SMS de MFA no login.
+Como obter e dicas de uso estão na seção [Variáveis de Ambiente do Twilio](#variaveis-de-ambiente-do-twilio). Sem essas variáveis, o backend falhará ao enviar o SMS de MFA no login.
 
 4) Subir a aplicação
 
@@ -226,6 +226,7 @@ O arquivo `http/requests.http` contém exemplos de Registro, Login, MFA, Troca d
 
 ---
 
+<a id="variaveis-de-ambiente-do-twilio"></a>
 ## Variáveis de Ambiente do Twilio
 
 MFA via SMS usa Twilio. Configure no `.env` (na pasta `app/`):
